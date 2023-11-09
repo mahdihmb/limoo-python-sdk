@@ -7,7 +7,7 @@ import urllib.parse
 
 from aiohttp import ClientConnectionError, ClientPayloadError, ClientSession, CookieJar, FormData
 
-from .entities import Conversations, Files, Messages, Users, Workspaces
+from .entities import Conversations, Files, Messages, Users, Workspaces, Tasks, Threads
 from .exceptions import LimooAuthenticationError, LimooError
 
 _LOGGER = logging.getLogger('limoo')
@@ -83,7 +83,7 @@ class LimooDriver:
             f' "http://" or "https://". The received URL was "{limoo_url}"')
         self._credentials = {
             'j_username': bot_username,
-            'j_password': bot_password,
+	    'j_password': bot_password,
         }
         if limoo_url.endswith('/'):
             limoo_url = limoo_url[:-1]
@@ -104,6 +104,8 @@ class LimooDriver:
         self.messages = Messages(self)
         self.users = Users(self)
         self.workspaces = Workspaces(self)
+        self.tasks = Tasks(self)
+        self.threads = Threads(self)
 
     async def close(self):
         if self._listen_task:
@@ -150,7 +152,7 @@ class LimooDriver:
     async def _execute_request(self, method, url, *, data=None, json=None):
         for retry_attempts in range(self._max_requests_retry):
             try:
-                response = await self._client_session.request(method, url, data=data, json=json, params={"is_bot": "true"})
+                response = await self._client_session.request(method, url, data=data, json=json, verify_ssl= False, params={"is_bot": "true"})
                 break
             except ClientConnectionError as ex:
                 _LOGGER.error(f'Connection Error for sending request: {ex}')
@@ -232,7 +234,7 @@ class LimooDriver:
     @_with_auth
     async def _try_connecting(self):
         async with contextlib.AsyncExitStack() as stack:
-            ws = await stack.enter_async_context(self._client_session.ws_connect(self._websocket_url, receive_timeout=70, heartbeat=60))
+            ws = await stack.enter_async_context(self._client_session.ws_connect(self._websocket_url, receive_timeout=70, heartbeat=60, verify_ssl=False))
             event = await self._receive_event(ws)
             if event.get('event') == 'authentication_failed':
                 raise LimooAuthenticationError

@@ -30,6 +30,10 @@ class Messages:
             body['files'] = files
         return await self._driver._execute_api_post(self._SEND.format(workspace_id), body=body)
 
+    _GET_DATA = 'workspace/items/{}/conversation/items/{}/message/items/{}'
+    async def get(self, workspace_id, conversation_id, message_id):
+        return await self._driver._execute_api_get(self._GET_DATA.format(workspace_id, conversation_id, message_id))
+    
     _ADD_REACTION = 'workspace/items/{}/conversation/items/{}/message/items/{}/reaction/items/{}'
     async def add_reaction(self, workspace_id, conversation_id, message_id, reaction_name):
         return await self._driver._execute_api_post(self._ADD_REACTION.format(workspace_id, conversation_id, message_id, reaction_name), {})
